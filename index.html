@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Ask Rosie · Classroom Edition</title>
+<meta name="description" content="A curriculum-aware, grade-adaptive version of the Crystal Bridges Ask Rosie companion app.">
+
+<!-- Playfair Display for headers, Inter for body. Both degrade to a named
+     local stack in styles.css, so the standalone build still reads correctly
+     with no network. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..600&family=Inter:wght@400;500;600&display=swap">
+
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23FDFBF7'/><rect x='8' y='8' width='84' height='84' fill='none' stroke='%231A1A1A' stroke-width='5'/><text y='70' x='50' text-anchor='middle' font-size='52' fill='%231B4332' font-family='Georgia,serif'>R</text></svg>">
+</head>
+<body>
+
+<a class="skip-link" href="#main" data-i18n="skip">Skip to main content</a>
+
+<header class="topbar" id="topbar">
+  <button class="brand" id="brand-home" data-i18n-label="a11y.home" aria-label="Ask Rosie home">
+    <span class="brand-mark" aria-hidden="true">R</span>
+    <span class="brand-text">
+      <strong>Ask Rosie</strong>
+      <small data-i18n="brand.edition">Classroom Edition</small>
+    </span>
+  </button>
+
+  <nav class="topnav" id="topnav" data-i18n-label="a11y.main" aria-label="Main">
+    <button data-nav="chat"    class="navbtn" data-i18n="nav.chat">Explore</button>
+    <button data-nav="quiz"    class="navbtn" data-i18n="nav.quiz">Quiz</button>
+    <button data-nav="teacher" class="navbtn" data-i18n="nav.teacher">Teacher</button>
+    <button data-nav="history" class="navbtn" data-i18n="nav.history">History</button>
+  </nav>
+
+  <div class="topbar-right">
+    <button class="langbtn" id="lang-toggle" data-i18n-label="a11y.lang"
+            aria-label="Switch language" title="Switch language">
+      <span aria-hidden="true" id="lang-current">EN</span>
+    </button>
+    <button class="iconbtn" id="theme-toggle" data-i18n-label="a11y.theme"
+            aria-label="Toggle dark mode" title="Toggle dark mode">
+      <span aria-hidden="true">◐</span>
+    </button>
+    <button class="userchip" id="userchip" hidden></button>
+  </div>
+</header>
+
+<!-- Context strip: the visible proof that grade band and curriculum are live inputs. -->
+<div class="contextbar" id="contextbar" hidden>
+  <div class="ctx-inner">
+    <div class="ctx-group">
+      <span class="ctx-label" data-i18n="ctx.level">Reading level</span>
+      <div class="bandpicker" id="bandpicker" role="group" data-i18n-label="a11y.band" aria-label="Grade band"></div>
+    </div>
+    <div class="ctx-group ctx-curriculum">
+      <span class="ctx-label" data-i18n="ctx.unit">Class unit</span>
+      <span class="ctx-value" id="ctx-curriculum">None loaded</span>
+    </div>
+    <div class="ctx-group ctx-topics" id="ctx-topics"></div>
+  </div>
+</div>
+
+<main id="main">
+
+  <!-- ── Landing ─────────────────────────────────────────────────────── -->
+  <section class="view view-landing" id="view-landing">
+    <div class="landing-inner">
+
+      <!-- Asymmetric masthead: the headline takes seven columns, the apparatus
+           beside it takes five. -->
+      <div class="landing-grid">
+        <div class="landing-lead">
+          <p class="eyebrow" data-i18n="landing.eyebrow">Crystal Bridges Museum of American Art</p>
+          <h1 class="display"><span data-i18n="landing.h1a">Hi, I’m Rosie.</span><br><span data-i18n="landing.h1b">Let’s talk about art —</span> <em data-i18n="landing.h1em">your way</em>.</h1>
+        </div>
+
+        <aside class="landing-aside">
+          <span class="rule" aria-hidden="true"></span>
+          <p class="lede" data-i18n="landing.lede">The same painting means something different to a second grader and a senior. Tell me who I’m talking to and what your class is studying, and I’ll meet you there.</p>
+          <dl class="spec">
+            <dt data-i18n="landing.spec1k">Edition</dt><dd data-i18n="landing.spec1v">Classroom</dd>
+            <dt data-i18n="landing.spec2k">Reading levels</dt><dd data-i18n="landing.spec2v">Grades 2 through 12</dd>
+            <dt data-i18n="landing.spec3k">Input</dt><dd data-i18n="landing.spec3v">Your own unit plan or standards</dd>
+          </dl>
+        </aside>
+      </div>
+
+      <div class="doors-block">
+        <h2 class="section-label"><span class="num">01</span> <span data-i18n="landing.doors">Choose a door</span></h2>
+
+        <div class="doors">
+          <button class="door" data-door="teacher">
+            <span class="door-num" data-i18n="door.teacher.eyebrow">For educators</span>
+            <strong data-i18n="door.teacher.title">I’m a teacher</strong>
+            <span class="door-desc" data-i18n="door.teacher.desc">Load your unit, set a reading level, choose which works your class explores.</span>
+            <span class="door-icon" aria-hidden="true">→</span>
+          </button>
+          <button class="door" data-door="student">
+            <span class="door-num" data-i18n="door.student.eyebrow">For students</span>
+            <strong data-i18n="door.student.title">I’m a student</strong>
+            <span class="door-desc" data-i18n="door.student.desc">Jump straight into the gallery and start asking questions.</span>
+            <span class="door-icon" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="landing-note" data-i18n="landing.note">A prototype exploring how a museum companion app could adapt to a classroom. Not affiliated with Crystal Bridges.</p>
+    </div>
+  </section>
+
+  <!-- ── Sign in ─────────────────────────────────────────────────────── -->
+  <section class="view view-signin" id="view-signin">
+    <div class="panel narrow">
+      <h2 id="signin-title">Sign in</h2>
+      <p class="muted" id="signin-sub"></p>
+      <form id="signin-form" class="stack">
+        <label class="field">
+          <span data-i18n="signin.name">Your name</span>
+          <input type="text" id="signin-name" required autocomplete="name" placeholder="e.g. Ms. Alvarez">
+        </label>
+        <label class="field" id="signin-code-field">
+          <span data-i18n="signin.code">Class code</span>
+          <input type="text" id="signin-code" placeholder="DEMO" autocomplete="off">
+          <small class="hint"><span data-i18n="signin.hint1">Try</span> <code>DEMO</code> <span data-i18n="signin.hint2">to load a sample WWII unit.</span></small>
+        </label>
+        <div class="row">
+          <button type="submit" class="btn primary" data-i18n="signin.continue">Continue</button>
+          <button type="button" class="btn ghost" data-nav="landing" data-i18n="signin.back">Back</button>
+        </div>
+      </form>
+      <p class="disclaimer" data-i18n="signin.disclaimer">This is a demo. Your name and settings are stored only in this browser — there is no server and no real account.</p>
+    </div>
+  </section>
+
+  <!-- ── Reading level ───────────────────────────────────────────────
+       Chosen once, before the gallery opens, and remembered from then on.
+       The chat itself carries no level control -- it is a bare surface. -->
+  <section class="view view-level" id="view-level">
+    <div class="level-inner">
+      <p class="eyebrow" data-i18n="level.eyebrow">Before we start</p>
+      <h2 class="level-title" data-i18n="level.title">How should Rosie talk to you?</h2>
+      <p class="lede" data-i18n="level.lede">Every answer is written from scratch for the level you pick. Choose the one that fits your class — you can change it later from the gallery.</p>
+
+      <div class="bandpicker stack" id="bandpicker-level" role="group" data-i18n-label="a11y.band" aria-label="Grade band"></div>
+
+      <div class="band-preview" id="level-preview"></div>
+
+      <div class="row level-actions">
+        <button type="button" class="btn primary" id="btn-level-continue" data-i18n="level.enter">Enter the gallery</button>
+        <button type="button" class="btn ghost" id="btn-level-back" data-i18n="level.back">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Student chat ────────────────────────────────────────────────── -->
+  <section class="view view-chat" id="view-chat">
+    <div class="chatwrap">
+
+      <!-- The chat runs without app chrome. This row is all of it: a way out,
+           and the gallery folded into a menu that is closed by default. -->
+      <div class="chatbar">
+        <button class="chat-exit" id="chat-exit" data-i18n-label="chat.leave" aria-label="Leave the gallery" title="Leave the gallery">
+          <span aria-hidden="true">←</span>
+        </button>
+
+        <div class="gallerymenu" id="gallerymenu">
+          <button type="button" class="gallery-trigger" id="gallery-trigger"
+                  aria-expanded="false" aria-controls="gallery-panel">
+            <span class="gt-eyebrow" data-i18n="chat.gallery">Gallery</span>
+            <span class="gt-current" id="gallery-current">—</span>
+            <span class="gt-caret" aria-hidden="true">▾</span>
+          </button>
+
+          <div class="gallery-panel" id="gallery-panel" role="group" data-i18n-label="chat.a11yWorks" aria-label="Artworks in this class" hidden>
+            <p class="gallery-sub" id="gallery-sub"></p>
+            <div class="gallery-list" id="gallery-list"></div>
+            <p class="gallery-foot">
+              <span data-i18n="ctx.level">Reading level</span> <strong id="gallery-band">—</strong>
+              <button type="button" class="linkbtn" id="btn-change-band" data-i18n="chat.change">Change</button>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="artwork-header" id="artwork-header"></div>
+
+      <div class="thread" id="thread" aria-live="polite" data-i18n-label="chat.a11yThread" aria-label="Conversation with Rosie"></div>
+
+      <div class="composer">
+        <div class="chips" id="chips" data-i18n-label="chat.a11ySuggest" aria-label="Suggested questions"></div>
+        <form class="composer-form" id="composer-form">
+          <label class="sr-only" for="composer-input" data-i18n="chat.askLabel">Ask Rosie a question</label>
+          <input type="text" id="composer-input" data-i18n-ph="chat.askPh" placeholder="Ask Rosie about this painting…" autocomplete="off">
+          <button type="submit" class="btn primary" id="composer-send" data-i18n="chat.ask">Ask</button>
+        </form>
+        <div class="composer-actions">
+          <button class="btn small ghost" id="btn-quiz-this" data-i18n="chat.quizThis">Quiz me on this work</button>
+          <button class="btn small ghost" id="btn-new-chat" data-i18n="chat.newChat">Start a new conversation</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Teacher dashboard ───────────────────────────────────────────── -->
+  <section class="view view-teacher" id="view-teacher">
+    <div class="teacher-grid">
+
+      <div class="panel">
+        <h2><span class="num">01</span> <span data-i18n="teacher.s1">Load your curriculum</span></h2>
+        <p class="muted" data-i18n="teacher.s1sub">Paste a unit plan or standards. Rosie scans it for focus topics and suggests which works fit.</p>
+
+        <div class="presets" id="presets"></div>
+
+        <details class="paste-block" id="paste-block">
+          <summary data-i18n="teacher.paste">Or paste your own unit</summary>
+          <label class="field">
+            <span class="sr-only" data-i18n="teacher.unitTitle">Unit title</span>
+            <input type="text" id="unit-title" data-i18n-ph="teacher.unitTitlePh" placeholder="Unit title (e.g. Unit 4: The Home Front)">
+          </label>
+          <label class="field">
+            <span class="sr-only" data-i18n="teacher.unitText">Curriculum text</span>
+            <textarea id="unit-text" rows="8" data-i18n-ph="teacher.unitTextPh" placeholder="Paste your unit description, essential questions, vocabulary, or standards here…"></textarea>
+          </label>
+          <div class="row">
+            <button class="btn primary" id="btn-parse" data-i18n="teacher.analyze">Analyze unit</button>
+            <button class="btn ghost" id="btn-upload" data-i18n="teacher.upload">Upload a .txt file</button>
+            <input type="file" id="file-input" accept=".txt,.md,text/plain" data-i18n-label="teacher.a11yUpload" aria-label="Upload a curriculum text file" hidden>
+          </div>
+        </details>
+
+        <div class="parsed" id="parsed" hidden>
+          <h3 data-i18n="teacher.detected">Detected focus topics</h3>
+          <p class="muted small" data-i18n="teacher.detectedSub">Rosie will steer answers toward these. Remove any that don’t fit — this is keyword matching, not comprehension.</p>
+          <div class="topicchips" id="topicchips"></div>
+          <button class="btn small ghost" id="btn-clear-curriculum" data-i18n="teacher.clearUnit">Clear this unit</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="num">02</span> <span data-i18n="teacher.s2">Set the reading level</span></h2>
+        <p class="muted" data-i18n="teacher.s2sub">Every answer Rosie gives is rewritten for this band.</p>
+        <div class="bandpicker large" id="bandpicker-teacher" role="group" data-i18n-label="a11y.band" aria-label="Grade band"></div>
+        <div class="band-preview" id="band-preview"></div>
+      </div>
+
+      <div class="panel span-2">
+        <h2><span class="num">03</span> <span data-i18n="teacher.s3">Choose which works your class explores</span></h2>
+        <p class="muted" id="scope-note">All works are available. Load a unit above and Rosie will suggest a focused set.</p>
+        <div class="scope-grid" id="scope-grid"></div>
+      </div>
+
+      <div class="panel span-2">
+        <h2 data-i18n="teacher.activity">Class activity</h2>
+        <p class="muted small" data-i18n="teacher.activitySub">Quiz results and conversations from this class.</p>
+        <div class="activity" id="activity"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Quiz ────────────────────────────────────────────────────────── -->
+  <section class="view view-quiz" id="view-quiz">
+    <div class="quizwrap" id="quizwrap"></div>
+  </section>
+
+  <!-- ── History ─────────────────────────────────────────────────────── -->
+  <section class="view view-history" id="view-history">
+    <div class="panel">
+      <h2 data-i18n="hist.chats">Your conversations</h2>
+      <p class="muted" data-i18n="hist.chatsSub">Saved in this browser only. Signing in is what makes them persist across sessions.</p>
+      <div class="historylist" id="historylist"></div>
+    </div>
+    <div class="panel">
+      <h2 data-i18n="hist.quizzes">Your quiz results</h2>
+      <div class="historylist" id="quizhistory"></div>
+    </div>
+    <div class="panel danger-panel">
+      <h2 data-i18n="hist.reset">Reset demo</h2>
+      <p class="muted" data-i18n="hist.resetSub">Clears everything stored in this browser and returns to the start.</p>
+      <button class="btn danger" id="btn-reset" data-i18n="hist.resetBtn">Reset all demo data</button>
+    </div>
+  </section>
+
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
