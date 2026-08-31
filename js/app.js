@@ -2,13 +2,13 @@
 
 import { state, save, reset } from './state.js';
 import { ARTWORKS, GRADE_BANDS } from '../data/artworks.js';
-import { t, bandLabel, topicLabel, artById, localizeArt, curLang, otherLang, langLabel, setLang, applyLang } from './i18n.js';
+import { t, bandLabel, topicLabel, artById, localizeArt, applyLang } from './i18n.js';
 import { getRosieReply } from './rosie.js';
-import { renderChat, openArtwork, closeGallery, relevelChat } from './chat.js';
+import { renderChat, openArtwork } from './chat.js';
 import { renderTeacher } from './teacher.js';
 import { startQuiz, renderQuiz } from './quiz.js';
 import { renderHistory } from './history.js';
-import { mountAuth, renderUserChip } from './auth.js';
+import { mountAuth } from './auth.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -27,8 +27,6 @@ let current = 'landing';
 export function navigate(view) {
   // The gallery never opens on an unchosen reading level.
   if (view === 'chat' && !state.bandChosen) view = 'level';
-
-  closeGallery();   // never leave the chat's menu hanging open behind a view switch
 
   current = view;
   $$('.view').forEach((v) => v.classList.remove('active'));
@@ -118,43 +116,15 @@ export function renderContextBar() {
   syncBandPickers();
 }
 
-/* ── language ────────────────────────────────────────────────────────────
-   Switching language re-labels the static markup and then re-renders whatever
-   view is open. Rosie's existing answers are regenerated rather than left in
-   the previous language: relevelChat() already rewrites a whole thread from
-   its stored questions, and it reads the localized artwork, so calling it is
-   all a translation needs. */
-
-function renderLangButton() {
-  const btn = el('lang-current');
-  if (btn) btn.textContent = otherLang().toUpperCase();
-  const host = el('lang-toggle');
-  if (host) host.title = `${t('a11y.lang')} — ${langLabel(otherLang())}`;
-}
-
-function toggleLang() {
-  if (!setLang(otherLang())) return;
-  applyLang();
-  renderLangButton();
-  renderUserChip();
-  if (current === 'chat') relevelChat();
-  navigate(current);
-}
-
 /* ── theme ───────────────────────────────────────────────────────────── */
 
 /* Cream is the default art direction, not a response to the OS setting -- the
- * editorial palette is built on paper. Dark is offered as a preference, and is
- * the same three colours inverted. */
+ * editorial palette is built on paper. Dark is offered as a stored preference,
+ * carried over from whatever a browser had saved before the toggle was
+ * removed from the chrome. */
 function applyTheme() {
   if (state.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   else document.documentElement.removeAttribute('data-theme');
-}
-
-function cycleTheme() {
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  save();
-  applyTheme();
 }
 
 /* ── boot ────────────────────────────────────────────────────────────── */
@@ -162,17 +132,13 @@ function cycleTheme() {
 function boot() {
   applyTheme();
   applyLang();
-  renderLangButton();
   mountBandPicker(el('bandpicker'), () => {
     if (current === 'chat') renderChat();
     if (current === 'teacher') renderTeacher();
   });
   mountAuth();
-  renderUserChip();
 
   el('brand-home').onclick = () => navigate(state.user ? 'chat' : 'landing');
-  el('theme-toggle').onclick = cycleTheme;
-  el('lang-toggle').onclick = toggleLang;
 
   el('btn-level-continue').onclick = () => {
     state.bandChosen = true;
@@ -181,9 +147,8 @@ function boot() {
   };
   el('btn-level-back').onclick = () => navigate(state.user ? 'teacher' : 'landing');
 
-  // The chat's only two chrome controls, both living inside the view itself.
+  // The chat's only chrome control, living inside the view itself.
   el('chat-exit').onclick = () => navigate(state.user?.role === 'teacher' ? 'teacher' : 'landing');
-  el('btn-change-band').onclick = () => navigate('level');
 
   document.addEventListener('click', (e) => {
     const nav = e.target.closest('[data-nav]');

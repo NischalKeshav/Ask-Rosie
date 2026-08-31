@@ -63,6 +63,15 @@ Everything a student would otherwise reach for up there has been moved out of th
 - **Leaving** is a single arrow left of the trigger — back to the dashboard for a teacher,
   back to the start for a student.
 - **The quiz** is reachable from the composer, where it was already.
+- **Finish Rosie's sentence** is the one other thing there. Tap it and Rosie posts a sentence
+  with a mad-lib blank in it — *"When I look at Rosie the Riveter, the first thing I see is
+  ______."* — and the blank is a field the student types straight into. On Enter their words
+  settle into the sentence and Rosie keeps writing right after them, in the same bubble: a
+  short pick-up, then the talking point the sentence was fishing for. One bubble, three
+  states; nothing goes through the composer and nothing new appears on screen. Starters are
+  written per topic and per grade band (`STARTERS` in `js/rosie.js`, Spanish in
+  `ROSIE.es.starters`), cycle through the six topics on repeated taps, and both halves of the
+  bubble re-level with the rest of the thread while the student's words stay as typed.
 
 Every other view keeps the full chrome. Only chat is bare, and `navigate()` is the one place
 that decides so (`BARE_VIEWS`).

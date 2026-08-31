@@ -27,18 +27,8 @@ export function mountAuth() {
       seedDemoData();
     }
 
-    renderUserChip();
     // Teachers set the level on their dashboard; students are asked for it directly.
     navigate(pendingRole === 'teacher' ? 'teacher' : 'chat');
-  });
-
-  el('userchip').addEventListener('click', () => {
-    if (confirm(t('signin.signout'))) {
-      state.user = null;
-      save();
-      renderUserChip();
-      navigate('landing');
-    }
   });
 }
 
@@ -53,13 +43,3 @@ function openSignin(role) {
   setTimeout(() => el('signin-name').focus(), 40);
 }
 
-export function renderUserChip() {
-  const chip = el('userchip');
-  if (!state.user) { chip.hidden = true; return; }
-  const initials = state.user.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  chip.hidden = false;
-  chip.innerHTML = `<span class="avatar">${initials}</span>
-    <span>${state.user.name}</span>
-    <span class="role">${t(state.user.role === 'teacher' ? 'nav.teacher' : 'role.student')}</span>`;
-  chip.title = `${t('signin.signedInAs')} ${state.user.name} (${t('nav.' + (state.user.role === 'teacher' ? 'teacher' : 'chat'))})`;
-}

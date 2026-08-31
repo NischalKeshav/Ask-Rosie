@@ -197,12 +197,17 @@ export function getRosieReply(question, ctx) {
     };
   }
 
-  const body = artwork.topics[topic][band];
-  const shared = sharedThemes(artwork, curriculum);
-  const parts = [];
+  const opener = pick((glue?.openers || OPENERS)[band], seed);
+  return compose(topic, ctx, seed, opener);
+}
 
-  parts.push(pick((glue?.openers || OPENERS)[band], seed));
-  parts.push(body);
+/* Opener + talking point + unit bridge + closer. Shared by questions and
+ * finished sentences, which differ only in how Rosie opens. */
+function compose(topic, ctx, seed, opener) {
+  const { artwork, gradeBand: band, curriculum } = ctx;
+  const glue = rosieGlue();
+  const shared = sharedThemes(artwork, curriculum);
+  const parts = [opener, artwork.topics[topic][band]];
 
   let bridged = false;
   if (shared.length) {
@@ -215,6 +220,90 @@ export function getRosieReply(question, ctx) {
   parts.push(pick((glue?.closers || CLOSERS)[band], seed + topic));
 
   return { text: parts.join(' '), topic, band, bridged };
+}
+
+/* ── finish the sentence ───────────────────────────────────────────────
+   Rosie starts a sentence about the work and leaves one blank; the student
+   fills it. `___` marks the blank. One blank only, at every level -- the point
+   is a low-stakes first move, not a worksheet. */
+const STARTERS = {
+  subject: {
+    'K-2':  'When I look at {title}, the first thing I see is ___.',
+    '3-5':  'The most important thing in {title} is ___.',
+    '6-8':  'The one detail in {title} that everything else depends on is ___.',
+    '9-12': 'The object that does the most work in {title} is ___.',
+  },
+  feeling: {
+    'K-2':  'This painting makes me feel ___.',
+    '3-5':  'If {title} were a song, it would sound ___.',
+    '6-8':  'The mood of {title} is ___, and I can tell because of the way it looks.',
+    '9-12': '{title} wants me to feel ___, and I am not sure I trust that.',
+  },
+  symbolism: {
+    'K-2':  'I think this picture is trying to say ___.',
+    '3-5':  'I think {artist} put that in the painting because ___.',
+    '6-8':  'The hidden message in {title} is ___.',
+    '9-12': 'The reading of {title} I would argue for is that it is really about ___.',
+  },
+  technique: {
+    'K-2':  'The colors in this painting look ___.',
+    '3-5':  'If I could ask {artist} how this was painted, I would ask about ___.',
+    '6-8':  'The choice {artist} made that changes everything is ___.',
+    '9-12': 'The formal decision in {title} that carries the argument is ___.',
+  },
+  context: {
+    'K-2':  'When this was painted, people were ___.',
+    '3-5':  'If I lived in {year}, I would have thought this painting was ___.',
+    '6-8':  'Someone in {year} would see this and think ___.',
+    '9-12': 'To understand {title} you first have to know that in {year} ___.',
+  },
+  artist: {
+    'K-2':  'If I met {artist}, I would ask ___.',
+    '3-5':  '{artist} painted this because ___.',
+    '6-8':  'What {artist} wanted people to remember is ___.',
+    '9-12': 'The thing {artist} gets right that a lesser painter would miss is ___.',
+  },
+};
+const STARTER_ORDER = ['subject', 'feeling', 'symbolism', 'technique', 'context', 'artist'];
+
+/* How Rosie picks the sentence back up. These run on directly after the
+   student's words, in the same bubble, so they read as a continuation rather
+   than a reply -- no quoting back what was just written. */
+const REACTIONS = {
+  'K-2':  ['I love that!', 'Good thinking!', 'You really looked!'],
+  '3-5':  ['Nice — here’s what I’d add.', 'I like that. Let’s build on it.', 'Good start.'],
+  '6-8':  ['That’s a real reading. Here’s mine.', 'Good. Now the evidence.', 'That holds up. Here’s more to work with.'],
+  '9-12': ['Defensible. Here’s where I’d push.', 'Worth taking seriously.', 'That’s one reading. Consider this alongside it.'],
+};
+
+/**
+ * The nth sentence starter for a work at a reading level. Cycles through the
+ * topics, so a student who keeps tapping gets a different angle each time.
+ * @returns {{topic: string, before: string, after: string}}
+ */
+export function starterFor(artwork, band, n) {
+  const topic = STARTER_ORDER[((n % STARTER_ORDER.length) + STARTER_ORDER.length) % STARTER_ORDER.length];
+  const table = rosieGlue()?.starters || STARTERS;
+  const tpl = table[topic][band]
+    .replace(/\{title\}/g, artwork.title)
+    .replace(/\{artist\}/g, artwork.artist)
+    .replace(/\{year\}/g, artwork.year);
+  const [before, after = ''] = tpl.split('___');
+  return { topic, before, after };
+}
+
+/**
+ * Rosie's reply to a finished sentence: she echoes the student's words, then
+ * gives the talking point the sentence was fishing for.
+ * @param {{topic: string, answer: string}} fill
+ */
+export function getFillReply(fill, ctx) {
+  const { artwork, gradeBand: band } = ctx;
+  const answer = String(fill.answer || '').trim().replace(/[.!?]+$/, '');
+  const seed = answer.toLowerCase() + '|' + artwork.id + '|' + band;
+  const reactions = rosieGlue()?.reactions || REACTIONS;
+  const opener = pick(reactions[band], seed).replace('{a}', answer);
+  return compose(fill.topic, ctx, seed, opener);
 }
 
 /**

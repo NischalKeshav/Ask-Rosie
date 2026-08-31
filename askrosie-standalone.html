@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Ask Rosie · Classroom Edition</title>
 <meta name="description" content="A curriculum-aware, grade-adaptive version of the Crystal Bridges Ask Rosie companion app.">
@@ -102,7 +102,12 @@
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+/* Belt and suspenders against horizontal drift on iOS Safari: a sticky-positioned
+   descendant (the context bar) can rubber-band the whole page sideways by a few
+   pixels even when nothing visibly overflows, because Safari sometimes fails to
+   let a plain `overflow-x: hidden` on body alone contain it. Locking touch-action
+   to vertical panning stops that gesture from ever engaging. */
+html { -webkit-text-size-adjust: 100%; overflow-x: hidden; touch-action: pan-y; }
 
 body {
   background: var(--bg);
@@ -112,11 +117,16 @@ body {
   line-height: 1.65;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  /* A long unbroken word -- a pasted URL in a teacher's curriculum text, an
+     unbroken title -- would otherwise force its box wider than the screen.
+     This breaks it instead; overflow-wrap is inherited, so one rule covers
+     every panel and bubble in the app. */
+  overflow-wrap: break-word;
 }
 /* Chat runs with no top bar; nothing above it should be able to scroll. */
 body.bare { overflow: hidden; }
 
-.topbar, .contextbar, .navbtn, .btn, .chip, .bandpicker, .tag, .minichip { user-select: none; }
+.topbar, .contextbar, .navbtn, .btn, .bandpicker, .minichip { user-select: none; }
 
 /* ── typography ──────────────────────────────────────────────────────────
    Serif headers, tracked open. Playfair is high-contrast enough that positive
@@ -160,7 +170,7 @@ code {
 /* An eyebrow, a section label, a spec key — the sheet's one repeated device.
    Tracking is open but not extreme; the caps are small enough to stay quiet. */
 .eyebrow, .ctx-label, .qcount, .band-preview .lbl, .feedback .who,
-.num, .spec dt, .userchip .role, .brand-text small, .door-num {
+.num, .spec dt, .brand-text small, .door-num {
   font-family: var(--sans);
   font-size: .66rem;
   font-weight: 500;
@@ -177,7 +187,7 @@ code {
 .topbar {
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; gap: 1rem;
-  padding: .9rem var(--pad);
+  padding: max(.9rem, env(safe-area-inset-top)) var(--pad) .9rem;
   background: var(--bg);
   border-bottom: 1px solid var(--hair);
 }
@@ -202,42 +212,6 @@ code {
 }
 .navbtn:hover { color: var(--ink); background: var(--surface-2); }
 .navbtn.active { color: var(--accent); background: var(--surface); }
-
-.topbar-right { display: flex; align-items: center; gap: .6rem; margin-left: auto; }
-/* A hidden nav is still a sibling, so the guard has to test for it. */
-.topnav:not([hidden]) + .topbar-right { margin-left: 0; }
-.iconbtn {
-  width: 36px; height: 36px; display: grid; place-items: center;
-  background: transparent; border: var(--bd) solid var(--edge); border-radius: var(--r-sm);
-  cursor: pointer; color: var(--ink-3);
-  transition: background .25s ease, color .25s ease, border-color .25s ease;
-}
-.iconbtn:hover { background: var(--surface); color: var(--ink); border-color: var(--edge-hover); }
-/* Language toggle: shows the language you would switch TO, the way a
-   bilingual sign does, rather than the one you are already reading. */
-.langbtn {
-  height: 36px; padding: 0 .8rem; display: grid; place-items: center;
-  background: transparent; border: var(--bd) solid var(--edge); border-radius: var(--r-sm);
-  cursor: pointer; color: var(--ink-3);
-  font-size: .74rem; font-weight: 600; letter-spacing: .1em;
-  transition: background .25s ease, color .25s ease, border-color .25s ease;
-}
-.langbtn:hover { background: var(--surface); color: var(--ink); border-color: var(--edge-hover); }
-
-.userchip {
-  display: flex; align-items: center; gap: .55rem;
-  background: transparent; border: var(--bd) solid var(--edge); border-radius: var(--r);
-  padding: .25rem .85rem .25rem .3rem; cursor: pointer; font-size: .84rem; color: var(--ink);
-  transition: background .25s ease, border-color .25s ease;
-}
-.userchip:hover { background: var(--surface); border-color: var(--edge-hover); }
-.userchip .avatar {
-  width: 27px; height: 27px; border-radius: var(--r-sm);
-  background: var(--forest); color: var(--cream);
-  display: grid; place-items: center; font-size: .68rem; font-weight: 600; flex: none;
-}
-:root[data-theme="dark"] .userchip .avatar { background: var(--accent); color: #17171A; }
-.userchip .role { color: var(--ink-3); font-size: .56rem; }
 
 /* ── context bar (quiz + teacher only) ───────────────────────────────── */
 .contextbar {
@@ -341,7 +315,7 @@ code {
 .field input, .field textarea {
   width: 100%; padding: .85rem 1.05rem;
   border: var(--bd) solid var(--edge); border-radius: var(--r);
-  background: var(--bg); color: var(--ink); font-size: .95rem;
+  background: var(--bg); color: var(--ink); font-size: 1rem;
   transition: border-color .25s ease, box-shadow .25s ease;
 }
 .field input:hover, .field textarea:hover { border-color: var(--edge-hover); }
@@ -463,7 +437,11 @@ code {
 /* ── chat — a bare surface: no top bar, no context strip, no sidebar ───
    One column. The gallery is a menu that is shut until asked for. */
 .view.view-chat.active { display: block; }
-.view-chat { height: 100vh; }
+/* 100vh includes the space Safari's collapsing address bar will reclaim;
+   100dvh tracks the actual visible viewport and is what keeps the composer
+   from sitting under that bar on iPhone. The vh line is the fallback for
+   browsers without dvh support. */
+.view-chat { height: 100vh; height: 100dvh; }
 
 /* ── artwork media ───────────────────────────────────────────────────────
    The SVG stand-in is the base layer and always renders. The museum photograph
@@ -479,127 +457,36 @@ code {
 .media-img.ready { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .media-img { transition: none; } }
 
-/* Attribution for the photograph, under the blurb in the artwork header. */
-.source { font-size: .74rem; color: var(--ink-3); margin: .8rem 0 0; line-height: 1.55; }
-.source a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--hair); }
-.source a:hover { border-bottom-color: currentColor; }
-
 .chatwrap {
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; min-width: 0;
   max-width: 880px; margin-inline: auto;
-  height: 100vh; min-height: 0;
-  padding: 0 var(--pad);
+  height: 100vh; height: 100dvh; min-height: 0; overflow: hidden;
+  padding: 0 max(var(--pad), env(safe-area-inset-right)) 0 max(var(--pad), env(safe-area-inset-left));
 }
 
+/* Chat has no top bar to carry the notch's safe area, so the bar that is
+   there -- just the exit arrow -- carries it instead. */
 .chatbar {
   display: flex; align-items: center; gap: .7rem;
-  padding: 1.1rem 0 .2rem; flex: none;
+  padding: max(1.1rem, env(safe-area-inset-top)) 0 .2rem; flex: none;
 }
 .chat-exit {
-  width: 40px; height: 40px; flex: none; display: grid; place-items: center;
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center;
   border: var(--bd) solid var(--edge); border-radius: var(--r-sm);
   background: var(--bg); color: var(--ink-3); cursor: pointer; font-size: 1.05rem;
   transition: background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
 }
 .chat-exit:hover { background: var(--surface); color: var(--ink); border-color: var(--edge-hover); transform: translateX(-3px); }
 
-/* ── the gallery menu ────────────────────────────────────────────────── */
-.gallerymenu { position: relative; min-width: 0; }
-
-.gallery-trigger {
-  display: flex; align-items: center; gap: .8rem;
-  max-width: min(460px, 60vw);
-  padding: .5rem .9rem .5rem 1rem;
-  border: var(--bd) solid var(--edge); border-radius: var(--r);
-  background: var(--bg); color: inherit; cursor: pointer; text-align: left;
-  transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
-}
-.gallery-trigger:hover { background: var(--surface); border-color: var(--edge-hover); box-shadow: var(--shadow); }
-.gallery-trigger[aria-expanded="true"] { background: var(--surface); border-color: var(--edge-hover); }
-.gt-eyebrow {
-  font-size: .6rem; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--ink-3); flex: none;
-  padding-right: .8rem; border-right: 1px solid var(--hair);
-}
-.gt-current {
-  font-family: var(--serif); font-size: 1.02rem; font-weight: 500; letter-spacing: .015em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-}
-.gt-caret {
-  flex: none; color: var(--ink-3); font-size: .8rem; line-height: 1;
-  transition: transform .25s cubic-bezier(.2,.7,.3,1);
-}
-.gallery-trigger[aria-expanded="true"] .gt-caret { transform: rotate(180deg); }
-
-@keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-.gallery-panel {
-  position: absolute; z-index: 50;
-  top: calc(100% + .5rem); left: 0;
-  width: min(430px, calc(100vw - 2 * var(--pad)));
-  display: flex; flex-direction: column;
-  max-height: min(62vh, 520px);
-  padding: 1rem 1rem .9rem;
-  background: var(--bg);
-  border: var(--bd) solid var(--edge); border-radius: var(--r-lg);
-  box-shadow: var(--shadow-lift);
-  animation: menuIn .2s cubic-bezier(.2,.7,.3,1) both;
-}
-.gallery-sub {
-  flex: none; margin: 0 0 .7rem; padding: 0 .2rem .7rem;
-  font-size: .76rem; color: var(--ink-3); border-bottom: 1px solid var(--hair);
-}
-.gallery-list {
-  display: flex; flex-direction: column; gap: .25rem;
-  flex: 1; min-height: 0; overflow-y: auto; margin: 0 -.25rem; padding: 0 .25rem;
-}
-.gallery-foot {
-  flex: none; margin: 0; padding-top: .8rem; border-top: 1px solid var(--hair);
-  font-size: .78rem; color: var(--ink-3);
-  display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap;
-}
-.gallery-foot strong { color: var(--ink); font-weight: 500; }
-.gallery-foot .linkbtn { margin-left: auto; font-size: .78rem; }
-
-.artcard {
-  display: flex; gap: .9rem; align-items: center; text-align: left; width: 100%;
-  padding: .6rem; border-radius: var(--r);
-  border: var(--bd) solid transparent;
-  background: none; cursor: pointer; color: inherit;
-  transition: background .25s ease, border-color .25s ease;
-}
-.artcard:hover { background: var(--surface); }
-.artcard[aria-current="true"] { background: var(--surface); border-color: var(--edge-hover); }
-.artcard .thumb {
-  width: 54px; height: 68px; flex: none; overflow: hidden;
-  border-radius: var(--r-sm); border: 1px solid var(--hair);
-}
-.artcard .meta { min-width: 0; }
-.artcard .t { font-family: var(--serif); font-size: .99rem; font-weight: 500; line-height: 1.3; display: block; letter-spacing: .015em; }
-.artcard .a { font-size: .76rem; color: var(--ink-3); display: block; margin-top: .22rem; }
-.artcard .tags { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .45rem; }
-.tag {
-  font-size: .58rem; text-transform: uppercase; letter-spacing: .12em;
-  color: var(--ink-3); border: 1px solid var(--hair); border-radius: var(--r-sm); padding: .12rem .45rem;
-}
-.tag.hot { color: var(--forest); border-color: color-mix(in srgb, var(--forest) 40%, transparent); }
-:root[data-theme="dark"] .tag.hot { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-
-.chatwrap { display: flex; flex-direction: column; min-width: 0; height: 100%; overflow: hidden; padding: 0 var(--pad) 0 2.4rem; }
 .artwork-header {
-  display: flex; gap: 1.8rem; padding: 1.4rem 0 1.6rem; align-items: flex-start; flex: none;
+  display: flex; justify-content: center; padding: 1.4rem 0 1.6rem; flex: none;
   border-bottom: 1px solid var(--hair);
 }
 .artwork-header .frame {
-  width: min(320px, 38%); flex: none; overflow: hidden;
-  border-radius: var(--r); box-shadow: var(--shadow);
+  width: 98%; aspect-ratio: 4 / 5; max-height: 55vh;
+  flex: none; overflow: hidden;
+  box-shadow: var(--shadow-lift);
 }
-.artwork-header .info { min-width: 0; align-self: center; }
-.artwork-header h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); margin-bottom: .4rem; }
-.artwork-header .credit {
-  font-size: .66rem; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--ink-3); margin-bottom: 1rem;
-}
-.artwork-header .blurb { font-size: .95rem; color: var(--ink-2); margin: 0; max-width: 60ch; line-height: 1.75; }
 
 .thread {
   flex: 1; overflow-y: auto; padding: 2.2rem 0;
@@ -619,6 +506,24 @@ code {
 .msg.rosie .bubble { background: var(--surface); border-top-left-radius: var(--r-sm); user-select: text; }
 .msg.user .bubble { background: var(--forest); color: var(--cream); border-top-right-radius: var(--r-sm); }
 :root[data-theme="dark"] .msg.user .bubble { background: var(--accent); color: #17171A; }
+/* Mad lib: the blank is a bare underlined field inside Rosie's sentence, and the
+   student's words keep that underline once they settle in. Nothing is boxed --
+   it should look like a worksheet line, not a form. */
+.bubble .fillin {
+  display: inline; font: inherit; color: var(--forest); background: transparent;
+  border: 0; border-bottom: 2px solid var(--forest); border-radius: 0;
+  padding: 0 .2em; margin: 0 .1em; outline: none; min-width: 6ch;
+}
+.bubble .fillin::placeholder { color: var(--ink-3); font-style: italic; }
+.bubble .fillin:focus { border-bottom-color: var(--accent); background: var(--cream-2); }
+:root[data-theme="dark"] .bubble .fillin { color: var(--accent); border-bottom-color: var(--accent); }
+:root[data-theme="dark"] .bubble .fillin:focus { background: transparent; }
+.bubble mark {
+  background: transparent; color: var(--forest); font-style: italic;
+  border-bottom: 2px solid var(--forest); padding: 0 .2em;
+}
+:root[data-theme="dark"] .bubble mark { color: var(--accent); border-bottom-color: var(--accent); }
+.typing.inline { display: inline-flex; vertical-align: middle; padding: 0; margin-left: .2em; }
 .msg .bandtag {
   display: inline-flex; align-items: center; gap: .5rem;
   font-size: .62rem; letter-spacing: .14em; text-transform: uppercase;
@@ -639,24 +544,16 @@ code {
 }
 .empty-thread em { color: var(--ink); font-style: italic; }
 
-.composer { border-top: 1px solid var(--hair); padding: 1.2rem 0 1.4rem; flex: none; }
-.chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-.chip {
-  padding: .45rem 1rem; border-radius: var(--r);
-  border: var(--bd) solid var(--edge); background: transparent;
-  cursor: pointer; font-size: .86rem; color: var(--ink-2);
-  transition: background .25s ease, color .25s ease, border-color .25s ease;
+/* The home-indicator inset keeps the Ask button clear of the swipe-up gesture
+   bar on notched iPhones; env() resolves to 0 anywhere without one. */
+.composer {
+  border-top: 1px solid var(--hair); flex: none;
+  padding: 1.2rem 0 max(1.4rem, env(safe-area-inset-bottom));
 }
-.chip:hover { background: var(--surface); color: var(--ink); border-color: var(--edge-hover); }
-.chip.relevant { color: var(--forest); border-color: color-mix(in srgb, var(--forest) 35%, transparent); }
-.chip.relevant:hover { background: var(--forest); color: var(--cream); border-color: var(--forest); }
-:root[data-theme="dark"] .chip.relevant { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
-:root[data-theme="dark"] .chip.relevant:hover { background: var(--accent); color: #17171A; border-color: var(--accent); }
-.chip.relevant::before { content: "◆ "; font-size: .58em; vertical-align: middle; }
 .composer-form { display: flex; gap: .7rem; }
 .composer-form input {
   flex: 1; padding: .9rem 1.2rem; border-radius: var(--r);
-  border: var(--bd) solid var(--edge); background: var(--bg); font-size: .96rem; color: var(--ink);
+  border: var(--bd) solid var(--edge); background: var(--bg); font-size: 1rem; color: var(--ink);
   transition: border-color .25s ease, box-shadow .25s ease;
 }
 .composer-form input:hover { border-color: var(--edge-hover); }
@@ -831,11 +728,6 @@ code {
 }
 @media (max-width: 900px) {
   .thread { min-height: 0; }
-  /* Six suggestion chips stack to six rows on a phone. One scrolling row
-     instead, so the input stays on screen. */
-  .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .4rem; scrollbar-width: none; }
-  .chips::-webkit-scrollbar { display: none; }
-  .chip { flex: none; white-space: nowrap; }
   .brand-text small { display: none; }
   .doors { grid-template-columns: 1fr; }
   .bandpicker.stack { grid-template-columns: 1fr; }
@@ -847,13 +739,8 @@ code {
   .contextbar { position: static; }
   .ctx-inner { gap: .9rem 1.3rem; }
   .ctx-topics { display: none; }
-  .artwork-header { gap: 1.1rem; padding: 1.1rem 0 1.2rem; }
-  .artwork-header .frame { width: 150px; }
-  /* The trigger stretches to the content edge and the panel matches it, so the
-     menu can never hang off the right of a phone screen. */
-  .gallerymenu { flex: 1; min-width: 0; }
-  .gallery-trigger { max-width: none; width: 100%; }
-  .gallery-panel { left: 0; right: 0; width: auto; max-height: 60vh; }
+  .artwork-header { padding: 1rem 0 1.1rem; }
+  .artwork-header .frame { width: 98%; max-height: 40vh; }
   .msg { max-width: 100%; }
   .spec { grid-template-columns: 1fr; gap: .1rem 0; }
   .spec dd { margin-bottom: .7rem; }
@@ -865,18 +752,14 @@ code {
 }
 
 /* ── scrollbars ──────────────────────────────────────────────────────── */
-.thread, .gallery-list, .view-quiz, .view-history, .view-teacher {
+.thread, .view-quiz, .view-history, .view-teacher {
   scrollbar-width: thin;
   scrollbar-color: var(--edge-hover) transparent;
 }
-.thread::-webkit-scrollbar,
-.gallery-list::-webkit-scrollbar { width: 8px; height: 8px; }
-.thread::-webkit-scrollbar-track,
-.gallery-list::-webkit-scrollbar-track { background: transparent; }
-.thread::-webkit-scrollbar-thumb,
-.gallery-list::-webkit-scrollbar-thumb { background: var(--edge-hover); border-radius: 999px; }
-.thread::-webkit-scrollbar-thumb:hover,
-.gallery-list::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+.thread::-webkit-scrollbar { width: 8px; height: 8px; }
+.thread::-webkit-scrollbar-track { background: transparent; }
+.thread::-webkit-scrollbar-thumb { background: var(--edge-hover); border-radius: 999px; }
+.thread::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23FDFBF7'/><rect x='8' y='8' width='84' height='84' fill='none' stroke='%231A1A1A' stroke-width='5'/><text y='70' x='50' text-anchor='middle' font-size='52' fill='%231B4332' font-family='Georgia,serif'>R</text></svg>">
@@ -901,17 +784,6 @@ code {
     <button data-nav="history" class="navbtn" data-i18n="nav.history">History</button>
   </nav>
 
-  <div class="topbar-right">
-    <button class="langbtn" id="lang-toggle" data-i18n-label="a11y.lang"
-            aria-label="Switch language" title="Switch language">
-      <span aria-hidden="true" id="lang-current">EN</span>
-    </button>
-    <button class="iconbtn" id="theme-toggle" data-i18n-label="a11y.theme"
-            aria-label="Toggle dark mode" title="Toggle dark mode">
-      <span aria-hidden="true">◐</span>
-    </button>
-    <button class="userchip" id="userchip" hidden></button>
-  </div>
 </header>
 
 <!-- Context strip: the visible proof that grade band and curriculum are live inputs. -->
@@ -1008,7 +880,7 @@ code {
     <div class="level-inner">
       <p class="eyebrow" data-i18n="level.eyebrow">Before we start</p>
       <h2 class="level-title" data-i18n="level.title">How should Rosie talk to you?</h2>
-      <p class="lede" data-i18n="level.lede">Every answer is written from scratch for the level you pick. Choose the one that fits your class — you can change it later from the gallery.</p>
+      <p class="lede" data-i18n="level.lede">Every answer is written from scratch for the level you pick. Choose the one that fits your class.</p>
 
       <div class="bandpicker stack" id="bandpicker-level" role="group" data-i18n-label="a11y.band" aria-label="Grade band"></div>
 
@@ -1025,30 +897,11 @@ code {
   <section class="view view-chat" id="view-chat">
     <div class="chatwrap">
 
-      <!-- The chat runs without app chrome. This row is all of it: a way out,
-           and the gallery folded into a menu that is closed by default. -->
+      <!-- The chat runs without app chrome. This row is all of it: a way out. -->
       <div class="chatbar">
         <button class="chat-exit" id="chat-exit" data-i18n-label="chat.leave" aria-label="Leave the gallery" title="Leave the gallery">
           <span aria-hidden="true">←</span>
         </button>
-
-        <div class="gallerymenu" id="gallerymenu">
-          <button type="button" class="gallery-trigger" id="gallery-trigger"
-                  aria-expanded="false" aria-controls="gallery-panel">
-            <span class="gt-eyebrow" data-i18n="chat.gallery">Gallery</span>
-            <span class="gt-current" id="gallery-current">—</span>
-            <span class="gt-caret" aria-hidden="true">▾</span>
-          </button>
-
-          <div class="gallery-panel" id="gallery-panel" role="group" data-i18n-label="chat.a11yWorks" aria-label="Artworks in this class" hidden>
-            <p class="gallery-sub" id="gallery-sub"></p>
-            <div class="gallery-list" id="gallery-list"></div>
-            <p class="gallery-foot">
-              <span data-i18n="ctx.level">Reading level</span> <strong id="gallery-band">—</strong>
-              <button type="button" class="linkbtn" id="btn-change-band" data-i18n="chat.change">Change</button>
-            </p>
-          </div>
-        </div>
       </div>
 
       <div class="artwork-header" id="artwork-header"></div>
@@ -1056,15 +909,13 @@ code {
       <div class="thread" id="thread" aria-live="polite" data-i18n-label="chat.a11yThread" aria-label="Conversation with Rosie"></div>
 
       <div class="composer">
-        <div class="chips" id="chips" data-i18n-label="chat.a11ySuggest" aria-label="Suggested questions"></div>
         <form class="composer-form" id="composer-form">
           <label class="sr-only" for="composer-input" data-i18n="chat.askLabel">Ask Rosie a question</label>
           <input type="text" id="composer-input" data-i18n-ph="chat.askPh" placeholder="Ask Rosie about this painting…" autocomplete="off">
           <button type="submit" class="btn primary" id="composer-send" data-i18n="chat.ask">Ask</button>
         </form>
         <div class="composer-actions">
-          <button class="btn small ghost" id="btn-quiz-this" data-i18n="chat.quizThis">Quiz me on this work</button>
-          <button class="btn small ghost" id="btn-new-chat" data-i18n="chat.newChat">Start a new conversation</button>
+          <button class="btn small ghost" id="btn-fill" data-i18n="chat.fillStart">Finish Rosie’s sentence</button>
         </div>
       </div>
     </div>
@@ -3046,11 +2897,8 @@ const UI = {
     'nav.quiz':             'Quiz',
     'nav.teacher':          'Teacher',
     'nav.history':          'History',
-    'role.student':         'Student',
     'a11y.home':            'Ask Rosie home',
     'a11y.main':            'Main',
-    'a11y.theme':           'Toggle dark mode',
-    'a11y.lang':            'Switch language',
     'a11y.band':            'Grade band',
 
     'ctx.level':            'Reading level',
@@ -3091,36 +2939,24 @@ const UI = {
     'signin.continue':      'Continue',
     'signin.back':          'Back',
     'signin.disclaimer':    'This is a demo. Your name and settings are stored only in this browser — there is no server and no real account.',
-    'signin.signout':       'Sign out? Your chats stay in this browser.',
-    'signin.signedInAs':    'Signed in as',
 
     'level.eyebrow':        'Before we start',
     'level.title':          'How should Rosie talk to you?',
-    'level.lede':           'Every answer is written from scratch for the level you pick. Choose the one that fits your class — you can change it later from the gallery.',
+    'level.lede':           'Every answer is written from scratch for the level you pick. Choose the one that fits your class.',
     'level.sample':         'This is how Rosie would answer',
     'level.enter':          'Enter the gallery',
     'level.back':           'Back',
 
-    'chat.gallery':         'Gallery',
     'chat.leave':           'Leave the gallery',
-    'chat.choose':          'Choose a work',
-    'chat.change':          'Change',
-    'chat.works':           'works',
-    'chat.noUnit':          'no unit loaded',
-    'chat.chosenFor':       'works chosen for',
     'chat.askLabel':        'Ask Rosie a question',
     'chat.askPh':           'Ask Rosie about this painting…',
     'chat.ask':             'Ask',
-    'chat.quizThis':        'Quiz me on this work',
-    'chat.newChat':         'Start a new conversation',
+    'chat.fillStart':       'Finish Rosie’s sentence',
+    'chat.fillHint':        'type here, then Enter',
     'chat.a11yThread':      'Conversation with Rosie',
-    'chat.a11ySuggest':     'Suggested questions',
-    'chat.a11yWorks':       'Artworks in this class',
     'chat.emptyA':          'Ask Rosie anything about',
     'chat.emptyB':          '— or tap one of the questions below.',
     'chat.linked':          'linked to your unit',
-    'chat.source':          'Collection of the',
-    'chat.sourceTail':      'Image served from the museum’s collection site.',
 
     'teacher.s1':           'Load your curriculum',
     'teacher.s1sub':        'Paste a unit plan or standards. Rosie scans it for focus topics and suggests which works fit.',
@@ -3186,11 +3022,8 @@ const UI = {
     'nav.quiz':             'Examen',
     'nav.teacher':          'Docente',
     'nav.history':          'Historial',
-    'role.student':         'Estudiante',
     'a11y.home':            'Inicio de Ask Rosie',
     'a11y.main':            'Principal',
-    'a11y.theme':           'Cambiar a modo oscuro',
-    'a11y.lang':            'Cambiar de idioma',
     'a11y.band':            'Nivel de grado',
 
     'ctx.level':            'Nivel de lectura',
@@ -3231,36 +3064,24 @@ const UI = {
     'signin.continue':      'Continuar',
     'signin.back':          'Atrás',
     'signin.disclaimer':    'Esto es una demostración. Tu nombre y tus ajustes se guardan solo en este navegador: no hay servidor ni cuenta real.',
-    'signin.signout':       '¿Cerrar sesión? Tus conversaciones seguirán en este navegador.',
-    'signin.signedInAs':    'Sesión iniciada como',
 
     'level.eyebrow':        'Antes de empezar',
     'level.title':          '¿Cómo debería hablarte Rosie?',
-    'level.lede':           'Cada respuesta se escribe desde cero para el nivel que elijas. Escoge el que corresponda a tu clase; puedes cambiarlo después desde la galería.',
+    'level.lede':           'Cada respuesta se escribe desde cero para el nivel que elijas. Escoge el que corresponda a tu clase.',
     'level.sample':         'Así respondería Rosie',
     'level.enter':          'Entrar a la galería',
     'level.back':           'Atrás',
 
-    'chat.gallery':         'Galería',
     'chat.leave':           'Salir de la galería',
-    'chat.choose':          'Elige una obra',
-    'chat.change':          'Cambiar',
-    'chat.works':           'obras',
-    'chat.noUnit':          'sin unidad cargada',
-    'chat.chosenFor':       'obras elegidas para',
     'chat.askLabel':        'Hazle una pregunta a Rosie',
     'chat.askPh':           'Pregúntale a Rosie sobre este cuadro…',
     'chat.ask':             'Preguntar',
-    'chat.quizThis':        'Examíname sobre esta obra',
-    'chat.newChat':         'Empezar otra conversación',
+    'chat.fillStart':       'Completa la frase de Rosie',
+    'chat.fillHint':        'escribe aquí y pulsa Enter',
     'chat.a11yThread':      'Conversación con Rosie',
-    'chat.a11ySuggest':     'Preguntas sugeridas',
-    'chat.a11yWorks':       'Obras de esta clase',
     'chat.emptyA':          'Pregúntale a Rosie lo que quieras sobre',
     'chat.emptyB':          '— o toca una de las preguntas de abajo.',
     'chat.linked':          'conectado con tu unidad',
-    'chat.source':          'Colección del',
-    'chat.sourceTail':      'Imagen servida desde el sitio de la colección del museo.',
 
     'teacher.s1':           'Carga tu currículo',
     'teacher.s1sub':        'Pega un plan de unidad o unos estándares. Rosie los revisa en busca de temas centrales y sugiere qué obras encajan.',
@@ -3362,6 +3183,50 @@ const ROSIE = {
     metaB:  'qué aparece, quién la hizo, qué estaba pasando en esa época, cómo se pintó y qué puede significar. Podrías probar con',
     fallbackA: 'No estoy segura de haber entendido eso, pero puedo hablar de',
     fallbackB: 'Prueba con',
+    starters: {
+      subject: {
+        'K-2':  'Cuando miro {title}, lo primero que veo es ___.',
+        '3-5':  'Lo más importante en {title} es ___.',
+        '6-8':  'El detalle de {title} del que depende todo lo demás es ___.',
+        '9-12': 'El objeto que más trabajo hace en {title} es ___.',
+      },
+      feeling: {
+        'K-2':  'Este cuadro me hace sentir ___.',
+        '3-5':  'Si {title} fuera una canción, sonaría ___.',
+        '6-8':  'El ánimo de {title} es ___, y lo sé por cómo se ve.',
+        '9-12': '{title} quiere que sienta ___, y no estoy seguro de fiarme de eso.',
+      },
+      symbolism: {
+        'K-2':  'Creo que este cuadro quiere decir ___.',
+        '3-5':  'Creo que {artist} puso eso en el cuadro porque ___.',
+        '6-8':  'El mensaje escondido de {title} es ___.',
+        '9-12': 'La lectura de {title} que yo defendería es que en realidad trata de ___.',
+      },
+      technique: {
+        'K-2':  'Los colores de este cuadro se ven ___.',
+        '3-5':  'Si pudiera preguntarle a {artist} cómo lo pintó, le preguntaría sobre ___.',
+        '6-8':  'La decisión de {artist} que lo cambia todo es ___.',
+        '9-12': 'La decisión formal de {title} que sostiene el argumento es ___.',
+      },
+      context: {
+        'K-2':  'Cuando se pintó esto, la gente estaba ___.',
+        '3-5':  'Si viviera en {year}, habría pensado que este cuadro era ___.',
+        '6-8':  'Alguien en {year} vería esto y pensaría ___.',
+        '9-12': 'Para entender {title} primero hay que saber que en {year} ___.',
+      },
+      artist: {
+        'K-2':  'Si conociera a {artist}, le preguntaría ___.',
+        '3-5':  '{artist} pintó esto porque ___.',
+        '6-8':  'Lo que {artist} quería que la gente recordara es ___.',
+        '9-12': 'Lo que {artist} acierta y un pintor menor pasaría por alto es ___.',
+      },
+    },
+    reactions: {
+      'K-2':  ['¡Me encanta!', '¡Bien pensado!', '¡Miraste de verdad!'],
+      '3-5':  ['Muy bien. Esto es lo que yo añadiría.', 'Me gusta. Sigamos desde ahí.', 'Buen comienzo.'],
+      '6-8':  ['Esa es una lectura de verdad. Aquí va la mía.', 'Bien. Ahora, la evidencia.', 'Se sostiene. Aquí hay más con qué trabajar.'],
+      '9-12': ['Defendible. Aquí es donde yo insistiría.', 'Vale la pena tomarlo en serio.', 'Es una lectura. Considera esta junto a ella.'],
+    },
   },
 };
 
@@ -4103,12 +3968,17 @@ function getRosieReply(question, ctx) {
     };
   }
 
-  const body = artwork.topics[topic][band];
-  const shared = sharedThemes(artwork, curriculum);
-  const parts = [];
+  const opener = pick((glue?.openers || OPENERS)[band], seed);
+  return compose(topic, ctx, seed, opener);
+}
 
-  parts.push(pick((glue?.openers || OPENERS)[band], seed));
-  parts.push(body);
+/* Opener + talking point + unit bridge + closer. Shared by questions and
+ * finished sentences, which differ only in how Rosie opens. */
+function compose(topic, ctx, seed, opener) {
+  const { artwork, gradeBand: band, curriculum } = ctx;
+  const glue = rosieGlue();
+  const shared = sharedThemes(artwork, curriculum);
+  const parts = [opener, artwork.topics[topic][band]];
 
   let bridged = false;
   if (shared.length) {
@@ -4121,6 +3991,90 @@ function getRosieReply(question, ctx) {
   parts.push(pick((glue?.closers || CLOSERS)[band], seed + topic));
 
   return { text: parts.join(' '), topic, band, bridged };
+}
+
+/* ── finish the sentence ───────────────────────────────────────────────
+   Rosie starts a sentence about the work and leaves one blank; the student
+   fills it. `___` marks the blank. One blank only, at every level -- the point
+   is a low-stakes first move, not a worksheet. */
+const STARTERS = {
+  subject: {
+    'K-2':  'When I look at {title}, the first thing I see is ___.',
+    '3-5':  'The most important thing in {title} is ___.',
+    '6-8':  'The one detail in {title} that everything else depends on is ___.',
+    '9-12': 'The object that does the most work in {title} is ___.',
+  },
+  feeling: {
+    'K-2':  'This painting makes me feel ___.',
+    '3-5':  'If {title} were a song, it would sound ___.',
+    '6-8':  'The mood of {title} is ___, and I can tell because of the way it looks.',
+    '9-12': '{title} wants me to feel ___, and I am not sure I trust that.',
+  },
+  symbolism: {
+    'K-2':  'I think this picture is trying to say ___.',
+    '3-5':  'I think {artist} put that in the painting because ___.',
+    '6-8':  'The hidden message in {title} is ___.',
+    '9-12': 'The reading of {title} I would argue for is that it is really about ___.',
+  },
+  technique: {
+    'K-2':  'The colors in this painting look ___.',
+    '3-5':  'If I could ask {artist} how this was painted, I would ask about ___.',
+    '6-8':  'The choice {artist} made that changes everything is ___.',
+    '9-12': 'The formal decision in {title} that carries the argument is ___.',
+  },
+  context: {
+    'K-2':  'When this was painted, people were ___.',
+    '3-5':  'If I lived in {year}, I would have thought this painting was ___.',
+    '6-8':  'Someone in {year} would see this and think ___.',
+    '9-12': 'To understand {title} you first have to know that in {year} ___.',
+  },
+  artist: {
+    'K-2':  'If I met {artist}, I would ask ___.',
+    '3-5':  '{artist} painted this because ___.',
+    '6-8':  'What {artist} wanted people to remember is ___.',
+    '9-12': 'The thing {artist} gets right that a lesser painter would miss is ___.',
+  },
+};
+const STARTER_ORDER = ['subject', 'feeling', 'symbolism', 'technique', 'context', 'artist'];
+
+/* How Rosie picks the sentence back up. These run on directly after the
+   student's words, in the same bubble, so they read as a continuation rather
+   than a reply -- no quoting back what was just written. */
+const REACTIONS = {
+  'K-2':  ['I love that!', 'Good thinking!', 'You really looked!'],
+  '3-5':  ['Nice — here’s what I’d add.', 'I like that. Let’s build on it.', 'Good start.'],
+  '6-8':  ['That’s a real reading. Here’s mine.', 'Good. Now the evidence.', 'That holds up. Here’s more to work with.'],
+  '9-12': ['Defensible. Here’s where I’d push.', 'Worth taking seriously.', 'That’s one reading. Consider this alongside it.'],
+};
+
+/**
+ * The nth sentence starter for a work at a reading level. Cycles through the
+ * topics, so a student who keeps tapping gets a different angle each time.
+ * @returns {{topic: string, before: string, after: string}}
+ */
+function starterFor(artwork, band, n) {
+  const topic = STARTER_ORDER[((n % STARTER_ORDER.length) + STARTER_ORDER.length) % STARTER_ORDER.length];
+  const table = rosieGlue()?.starters || STARTERS;
+  const tpl = table[topic][band]
+    .replace(/\{title\}/g, artwork.title)
+    .replace(/\{artist\}/g, artwork.artist)
+    .replace(/\{year\}/g, artwork.year);
+  const [before, after = ''] = tpl.split('___');
+  return { topic, before, after };
+}
+
+/**
+ * Rosie's reply to a finished sentence: she echoes the student's words, then
+ * gives the talking point the sentence was fishing for.
+ * @param {{topic: string, answer: string}} fill
+ */
+function getFillReply(fill, ctx) {
+  const { artwork, gradeBand: band } = ctx;
+  const answer = String(fill.answer || '').trim().replace(/[.!?]+$/, '');
+  const seed = answer.toLowerCase() + '|' + artwork.id + '|' + band;
+  const reactions = rosieGlue()?.reactions || REACTIONS;
+  const opener = pick(reactions[band], seed).replace('{a}', answer);
+  return compose(fill.topic, ctx, seed, opener);
 }
 
 /**
@@ -4177,18 +4131,8 @@ function mountAuth() {
       seedDemoData();
     }
 
-    renderUserChip();
     // Teachers set the level on their dashboard; students are asked for it directly.
     navigate(pendingRole === 'teacher' ? 'teacher' : 'chat');
-  });
-
-  el('userchip').addEventListener('click', () => {
-    if (confirm(t('signin.signout'))) {
-      state.user = null;
-      save();
-      renderUserChip();
-      navigate('landing');
-    }
   });
 }
 
@@ -4201,17 +4145,6 @@ function openSignin(role) {
   el('signin-name').placeholder = t(pendingRole === 'teacher' ? 'signin.namePhTeacher' : 'signin.namePhStudent');
   navigate('signin');
   setTimeout(() => el('signin-name').focus(), 40);
-}
-
-function renderUserChip() {
-  const chip = el('userchip');
-  if (!state.user) { chip.hidden = true; return; }
-  const initials = state.user.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  chip.hidden = false;
-  chip.innerHTML = `<span class="avatar">${initials}</span>
-    <span>${state.user.name}</span>
-    <span class="role">${t(state.user.role === 'teacher' ? 'nav.teacher' : 'role.student')}</span>`;
-  chip.title = `${t('signin.signedInAs')} ${state.user.name} (${t('nav.' + (state.user.role === 'teacher' ? 'teacher' : 'chat'))})`;
 }
 
 
@@ -4333,52 +4266,14 @@ function renderChat() {
   const chat = activeChat();
   if (chat && chat.gradeBand !== state.gradeBand) relevelChat();
 
-  renderGallery(works);
   renderHeader();
   renderThread();
-  renderChips();
   wireChat();
-}
-
-/* ── gallery ─────────────────────────────────────────────────────────── */
-
-function renderGallery(works) {
-  const cur = state.curriculum;
-  el('gallery-sub').textContent = cur
-    ? `${works.length} ${t('chat.chosenFor')} ${cur.title}`
-    : `${works.length} ${t('chat.works')} · ${t('chat.noUnit')}`;
-
-  // The level is shown, not editable -- changing it is a trip back to its own step.
-  el('gallery-band').textContent = bandLabel(state.gradeBand);
-
-  // The trigger carries the current work, so the menu can stay shut.
-  el('gallery-current').textContent = artById(activeChat()?.artworkId)?.title || t('chat.choose');
-
-  const active = activeChat()?.artworkId;
-  el('gallery-list').innerHTML = works.map((a) => {
-    const hot = sharedThemes(a, cur).slice(0, 2);
-    return `<button class="artcard" data-art="${a.id}" aria-current="${a.id === active}">
-      <span class="thumb">${artMedia(a, 'thumbnail')}</span>
-      <span class="meta">
-        <span class="t">${a.title}</span>
-        <span class="a">${a.artist}, ${a.year}</span>
-        <span class="tags">${hot.map((t) => `<span class="tag hot">${t.label}</span>`).join('')}</span>
-      </span>
-    </button>`;
-  }).join('');
 }
 
 function renderHeader() {
   const a = currentArtwork();
-  el('artwork-header').innerHTML = `
-    <span class="frame">${artMedia(a, 'full')}</span>
-    <span class="info">
-      <h2>${a.title}</h2>
-      ${a.cbObject ? `<p class="source">${t('chat.source')}
-        <a href="https://crystalbridges.emuseum.com/objects/${a.cbObject}"
-           target="_blank" rel="noopener noreferrer">Crystal Bridges Museum of American Art</a>.
-        ${t('chat.sourceTail')}</p>` : ''}
-    </span>`;
+  el('artwork-header').innerHTML = `<span class="frame">${artMedia(a, 'full')}</span>`;
 }
 
 /* ── thread ──────────────────────────────────────────────────────────── */
@@ -4403,23 +4298,32 @@ function renderThread() {
 
   box.innerHTML = chat.messages.map((m) => m.role === 'user'
     ? `<div class="msg user"><span class="av">${initials()}</span>
-         <div><div class="bubble">${escape(m.text)}</div></div></div>`
+         <div><div class="bubble">${bubbleText(m)}</div></div></div>`
     : `<div class="msg rosie"><span class="av">R</span>
-         <div><div class="bubble">${escape(m.text)}</div>${bandTag(m)}</div></div>`
+         <div><div class="bubble">${bubbleText(m)}</div>${bandTag(m)}</div></div>`
   ).join('');
   box.scrollTop = box.scrollHeight;
 }
 
+/* A mad lib is one bubble that changes state in place: Rosie's sentence with a
+   live blank in it; then the student's words in the blank; then Rosie carrying
+   on right after them. Everything else is plain text. */
+function bubbleText(m) {
+  const ml = m.madlib;
+  if (!ml) return escape(m.text);
+  if (ml.answer == null) {
+    return `${escape(ml.before)}<input class="fillin" type="text" autocomplete="off" spellcheck="false"
+      size="${Math.max(8, t('chat.fillHint').length)}" placeholder="${escape(t('chat.fillHint'))}"
+      aria-label="${escape(t('chat.fillHint'))}">${escape(ml.after)}`;
+  }
+  const tail = ml.continuation == null
+    ? ` <span class="typing inline"><span></span><span></span><span></span></span>`
+    : ` ${escape(ml.continuation)}`;
+  return `${escape(ml.before)}<mark>${escape(ml.answer)}</mark>${escape(ml.after)}${tail}`;
+}
+
 const escape = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const initials = () => (state.user?.name || 'You').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-
-function renderChips() {
-  const a = currentArtwork();
-  const list = suggestionsFor(a, state.curriculum);
-  el('chips').innerHTML = list.map((s) => `
-    <button class="chip ${s.relevant ? 'relevant' : ''}" data-chip="${s.topic}"
-            title="${s.relevant ? 'Connects to your class unit' : ''}">${s.q}</button>`).join('');
-}
 
 /* ── asking ──────────────────────────────────────────────────────────── */
 
@@ -4432,11 +4336,7 @@ function ask(question, forceTopic) {
 
   // A brief pause reads as consideration rather than lookup. It is cosmetic.
   thinking = true;
-  const box = el('thread');
-  box.insertAdjacentHTML('beforeend',
-    `<div class="msg rosie" id="typing"><span class="av">R</span>
-      <div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div></div>`);
-  box.scrollTop = box.scrollHeight;
+  showTyping();
 
   setTimeout(() => {
     const reply = getRosieReply(question, { ...ctx(a), forceTopic });
@@ -4447,6 +4347,62 @@ function ask(question, forceTopic) {
     document.getElementById('typing')?.remove();
     renderThread();
   }, 420);
+}
+
+/* ── mad lib ──────────────────────────────────────────────────────────────
+   Rosie posts a sentence with a blank the student types straight into. On
+   Enter the words settle into the sentence and Rosie keeps writing right after
+   them, in the same bubble. Nothing goes through the composer, nothing new
+   appears on screen: one bubble, three states. */
+
+const openMadlib = () => activeChat()?.messages.find((m) => m.madlib && m.madlib.answer == null) || null;
+
+/* The stored text is the flat sentence, so history and search see prose. */
+const madlibText = (ml) =>
+  `${ml.before}${ml.answer ?? '______'}${ml.after}${ml.continuation ? ' ' + ml.continuation : ''}`;
+
+function startMadlib() {
+  if (thinking) return;
+  if (openMadlib()) { el('thread').querySelector('.fillin')?.focus(); return; }
+  const chat = activeChat();
+  const a = currentArtwork();
+  const n = chat.messages.filter((m) => m.madlib).length;
+  const s = starterFor(a, state.gradeBand, n);
+  const madlib = { ...s, n, answer: null, continuation: null };
+  addMessage(chat.id, 'rosie', madlibText(madlib), { madlib, band: state.gradeBand, bridged: false });
+  renderThread();
+  el('thread').querySelector('.fillin')?.focus();
+}
+
+function finishMadlib(answer) {
+  const m = openMadlib();
+  if (!m || thinking) return;
+  const a = currentArtwork();
+  m.madlib.answer = answer;
+  m.text = madlibText(m.madlib);
+  save();
+  renderThread();
+
+  // Same cosmetic pause as a question, but the dots sit inside the sentence.
+  thinking = true;
+  setTimeout(() => {
+    const reply = getFillReply(m.madlib, ctx(a));
+    Object.assign(m, { topic: reply.topic, band: reply.band, bridged: reply.bridged });
+    m.madlib.continuation = reply.text;
+    m.text = madlibText(m.madlib);
+    thinking = false;
+    save();
+    renderThread();
+    el('composer-input').focus();
+  }, 420);
+}
+
+function showTyping() {
+  const box = el('thread');
+  box.insertAdjacentHTML('beforeend',
+    `<div class="msg rosie" id="typing"><span class="av">R</span>
+      <div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div></div>`);
+  box.scrollTop = box.scrollHeight;
 }
 
 /**
@@ -4461,7 +4417,21 @@ function relevelChat() {
   const a = artById(chat.artworkId);
   let changed = 0;
   chat.messages = chat.messages.map((m) => {
-    if (m.role !== 'rosie' || !m.sourceQuestion) return m;
+    if (m.role !== 'rosie') return m;
+    // Mad libs re-level both halves -- Rosie's sentence and her continuation --
+    // and leave the student's own words exactly as typed.
+    if (m.madlib) {
+      const ml = { ...m.madlib, ...starterFor(a, state.gradeBand, m.madlib.n) };
+      let meta = { band: state.gradeBand };
+      if (ml.answer != null && ml.continuation != null) {
+        const r = getFillReply(ml, ctx(a));
+        ml.continuation = r.text;
+        meta = { band: r.band, bridged: r.bridged, topic: r.topic };
+      }
+      changed++;
+      return { ...m, ...meta, madlib: ml, text: madlibText(ml) };
+    }
+    if (!m.sourceQuestion) return m;
     const r = getRosieReply(m.sourceQuestion, { ...ctx(a), forceTopic: m.topic || undefined });
     changed++;
     return { ...m, text: r.text, band: r.band, bridged: r.bridged, topic: r.topic };
@@ -4472,31 +4442,6 @@ function relevelChat() {
   return changed;
 }
 
-/* ── the gallery menu ────────────────────────────────────────────────────
-   The gallery used to be a permanent column. It is a menu now: the chat is the
-   only thing on screen until a student asks for the list. */
-
-let galleryOpen = false;
-
-function setGallery(open) {
-  galleryOpen = open;
-  el('gallery-panel').hidden = !open;
-  el('gallery-trigger').setAttribute('aria-expanded', String(open));
-}
-
-function closeGallery({ refocus = false } = {}) {
-  if (!galleryOpen) return;
-  setGallery(false);
-  if (refocus) el('gallery-trigger').focus();
-}
-
-function toggleGallery() {
-  if (galleryOpen) { closeGallery(); return; }
-  setGallery(true);
-  // Land on the work already open, so the list starts where the student is.
-  el('gallery-list').querySelector('[aria-current="true"]')?.focus();
-}
-
 /* ── wiring ──────────────────────────────────────────────────────────── */
 
 let chatWired = false;
@@ -4504,34 +4449,8 @@ function wireChat() {
   // No band picker here any more -- the level is settled before the chat opens,
   // and renderChat() re-levels the thread if it changed while away.
 
-  el('gallery-list').onclick = (e) => {
-    const card = e.target.closest('[data-art]');
-    if (!card) return;
-    openArtwork(card.dataset.art);
-    closeGallery();
-    renderChat();
-  };
-
-  el('chips').onclick = (e) => {
-    const chip = e.target.closest('[data-chip]');
-    if (!chip) return;
-    ask(chip.textContent.trim(), chip.dataset.chip);
-  };
-
   if (chatWired) return;
   chatWired = true;
-
-  el('gallery-trigger').addEventListener('click', toggleGallery);
-
-  // Anywhere outside the menu shuts it, as does Escape -- which also puts focus
-  // back on the trigger, so keyboard users are not dropped at the top of the page.
-  document.addEventListener('click', (e) => {
-    if (!galleryOpen) return;
-    if (!e.target.closest('#gallerymenu')) closeGallery();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && galleryOpen) closeGallery({ refocus: true });
-  });
 
   el('composer-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -4542,14 +4461,18 @@ function wireChat() {
     ask(q);
   });
 
-  el('btn-quiz-this').addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('quiz:start', { detail: { artworkId: currentArtwork().id } }));
-  });
+  el('btn-fill').addEventListener('click', startMadlib);
 
-  el('btn-new-chat').addEventListener('click', () => {
-    startChat(currentArtwork().id);
-    renderChat();
-    el('composer-input').focus();
+  // The blank lives inside the thread. Enter commits it; the field grows with
+  // the words so the sentence never looks like a form.
+  el('thread').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !e.target.classList.contains('fillin')) return;
+    e.preventDefault();
+    const v = e.target.value.trim();
+    if (v) finishMadlib(v);
+  });
+  el('thread').addEventListener('input', (e) => {
+    if (e.target.classList.contains('fillin')) e.target.size = Math.max(8, e.target.value.length + 1);
   });
 }
 
@@ -5018,8 +4941,6 @@ function navigate(view) {
   // The gallery never opens on an unchosen reading level.
   if (view === 'chat' && !state.bandChosen) view = 'level';
 
-  closeGallery();   // never leave the chat's menu hanging open behind a view switch
-
   current = view;
   $$('.view').forEach((v) => v.classList.remove('active'));
   const target = el('view-' + view);
@@ -5108,43 +5029,15 @@ function renderContextBar() {
   syncBandPickers();
 }
 
-/* ── language ────────────────────────────────────────────────────────────
-   Switching language re-labels the static markup and then re-renders whatever
-   view is open. Rosie's existing answers are regenerated rather than left in
-   the previous language: relevelChat() already rewrites a whole thread from
-   its stored questions, and it reads the localized artwork, so calling it is
-   all a translation needs. */
-
-function renderLangButton() {
-  const btn = el('lang-current');
-  if (btn) btn.textContent = otherLang().toUpperCase();
-  const host = el('lang-toggle');
-  if (host) host.title = `${t('a11y.lang')} — ${langLabel(otherLang())}`;
-}
-
-function toggleLang() {
-  if (!setLang(otherLang())) return;
-  applyLang();
-  renderLangButton();
-  renderUserChip();
-  if (current === 'chat') relevelChat();
-  navigate(current);
-}
-
 /* ── theme ───────────────────────────────────────────────────────────── */
 
 /* Cream is the default art direction, not a response to the OS setting -- the
- * editorial palette is built on paper. Dark is offered as a preference, and is
- * the same three colours inverted. */
+ * editorial palette is built on paper. Dark is offered as a stored preference,
+ * carried over from whatever a browser had saved before the toggle was
+ * removed from the chrome. */
 function applyTheme() {
   if (state.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   else document.documentElement.removeAttribute('data-theme');
-}
-
-function cycleTheme() {
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  save();
-  applyTheme();
 }
 
 /* ── boot ────────────────────────────────────────────────────────────── */
@@ -5152,17 +5045,13 @@ function cycleTheme() {
 function boot() {
   applyTheme();
   applyLang();
-  renderLangButton();
   mountBandPicker(el('bandpicker'), () => {
     if (current === 'chat') renderChat();
     if (current === 'teacher') renderTeacher();
   });
   mountAuth();
-  renderUserChip();
 
   el('brand-home').onclick = () => navigate(state.user ? 'chat' : 'landing');
-  el('theme-toggle').onclick = cycleTheme;
-  el('lang-toggle').onclick = toggleLang;
 
   el('btn-level-continue').onclick = () => {
     state.bandChosen = true;
@@ -5171,9 +5060,8 @@ function boot() {
   };
   el('btn-level-back').onclick = () => navigate(state.user ? 'teacher' : 'landing');
 
-  // The chat's only two chrome controls, both living inside the view itself.
+  // The chat's only chrome control, living inside the view itself.
   el('chat-exit').onclick = () => navigate(state.user?.role === 'teacher' ? 'teacher' : 'landing');
-  el('btn-change-band').onclick = () => navigate('level');
 
   document.addEventListener('click', (e) => {
     const nav = e.target.closest('[data-nav]');

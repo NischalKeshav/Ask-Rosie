@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Ask Rosie · Classroom Edition</title>
 <meta name="description" content="A curriculum-aware, grade-adaptive version of the Crystal Bridges Ask Rosie companion app.">
@@ -37,17 +37,6 @@
     <button data-nav="history" class="navbtn" data-i18n="nav.history">History</button>
   </nav>
 
-  <div class="topbar-right">
-    <button class="langbtn" id="lang-toggle" data-i18n-label="a11y.lang"
-            aria-label="Switch language" title="Switch language">
-      <span aria-hidden="true" id="lang-current">EN</span>
-    </button>
-    <button class="iconbtn" id="theme-toggle" data-i18n-label="a11y.theme"
-            aria-label="Toggle dark mode" title="Toggle dark mode">
-      <span aria-hidden="true">◐</span>
-    </button>
-    <button class="userchip" id="userchip" hidden></button>
-  </div>
 </header>
 
 <!-- Context strip: the visible proof that grade band and curriculum are live inputs. -->
@@ -144,7 +133,7 @@
     <div class="level-inner">
       <p class="eyebrow" data-i18n="level.eyebrow">Before we start</p>
       <h2 class="level-title" data-i18n="level.title">How should Rosie talk to you?</h2>
-      <p class="lede" data-i18n="level.lede">Every answer is written from scratch for the level you pick. Choose the one that fits your class — you can change it later from the gallery.</p>
+      <p class="lede" data-i18n="level.lede">Every answer is written from scratch for the level you pick. Choose the one that fits your class.</p>
 
       <div class="bandpicker stack" id="bandpicker-level" role="group" data-i18n-label="a11y.band" aria-label="Grade band"></div>
 
@@ -161,30 +150,11 @@
   <section class="view view-chat" id="view-chat">
     <div class="chatwrap">
 
-      <!-- The chat runs without app chrome. This row is all of it: a way out,
-           and the gallery folded into a menu that is closed by default. -->
+      <!-- The chat runs without app chrome. This row is all of it: a way out. -->
       <div class="chatbar">
         <button class="chat-exit" id="chat-exit" data-i18n-label="chat.leave" aria-label="Leave the gallery" title="Leave the gallery">
           <span aria-hidden="true">←</span>
         </button>
-
-        <div class="gallerymenu" id="gallerymenu">
-          <button type="button" class="gallery-trigger" id="gallery-trigger"
-                  aria-expanded="false" aria-controls="gallery-panel">
-            <span class="gt-eyebrow" data-i18n="chat.gallery">Gallery</span>
-            <span class="gt-current" id="gallery-current">—</span>
-            <span class="gt-caret" aria-hidden="true">▾</span>
-          </button>
-
-          <div class="gallery-panel" id="gallery-panel" role="group" data-i18n-label="chat.a11yWorks" aria-label="Artworks in this class" hidden>
-            <p class="gallery-sub" id="gallery-sub"></p>
-            <div class="gallery-list" id="gallery-list"></div>
-            <p class="gallery-foot">
-              <span data-i18n="ctx.level">Reading level</span> <strong id="gallery-band">—</strong>
-              <button type="button" class="linkbtn" id="btn-change-band" data-i18n="chat.change">Change</button>
-            </p>
-          </div>
-        </div>
       </div>
 
       <div class="artwork-header" id="artwork-header"></div>
@@ -192,15 +162,13 @@
       <div class="thread" id="thread" aria-live="polite" data-i18n-label="chat.a11yThread" aria-label="Conversation with Rosie"></div>
 
       <div class="composer">
-        <div class="chips" id="chips" data-i18n-label="chat.a11ySuggest" aria-label="Suggested questions"></div>
         <form class="composer-form" id="composer-form">
           <label class="sr-only" for="composer-input" data-i18n="chat.askLabel">Ask Rosie a question</label>
           <input type="text" id="composer-input" data-i18n-ph="chat.askPh" placeholder="Ask Rosie about this painting…" autocomplete="off">
           <button type="submit" class="btn primary" id="composer-send" data-i18n="chat.ask">Ask</button>
         </form>
         <div class="composer-actions">
-          <button class="btn small ghost" id="btn-quiz-this" data-i18n="chat.quizThis">Quiz me on this work</button>
-          <button class="btn small ghost" id="btn-new-chat" data-i18n="chat.newChat">Start a new conversation</button>
+          <button class="btn small ghost" id="btn-fill" data-i18n="chat.fillStart">Finish Rosie’s sentence</button>
         </div>
       </div>
     </div>
